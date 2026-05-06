@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs');
-const { getFilePath } = require('../storage/cacheService');
-const { logger } = require('../utils/logger');
+const { getFilePath } = require('./cacheService');
+const { logger } = require('./logger');
 
 const STATS_WINDOW_HOURS = 2;
 
