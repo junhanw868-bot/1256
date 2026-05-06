@@ -5,7 +5,7 @@ const { logger } = require('./logger');
 
 let config;
 try {
-  config = require('../xbk_config.json');
+  config = require(process.cwd() + '/../scripts/tyu/xbk_config.json');
 } catch (e) {
   logger.error('xbk_config.json 加载失败，请检查该文件是否存在及格式正确');
   process.exit(1);
