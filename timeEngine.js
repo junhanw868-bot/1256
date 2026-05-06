@@ -1,6 +1,6 @@
 'use strict';
 const { compile } = require('./regexEngine');
-const { logger } = require('../utils/logger');
+const { logger } = require('./logger');
 
 let config;
 try {
