@@ -1,6 +1,6 @@
 'use strict';
 const { compile, compileMany, safeTest } = require('./regexEngine');
-const { TIME_CHECKER, daysComputed } = require('.timeEngine');
+const { TIME_CHECKER, daysComputed } = require('./timeEngine');
 const { logger } = require('./logger');
 
 let config;
