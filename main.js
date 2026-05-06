@@ -1,13 +1,14 @@
 'use strict';
 
-const { getData, extractCacheFileName } = require('./service/fetchService');
-const { Notifier, createPushService } = require('./service/pushService');
-const { StatsService } = require('./service/statsService');
-const { CacheService } = require('./storage/cacheService');
-const { getFilterReason, filterList } = require('./service/filterService');
-const { logger } = require('./utils/logger');
+// 平铺结构适配：所有模块都在同一目录下
+const fetchService = require('./fetchService');
+const { Notifier, createPushService } = require('./pushService');
+const { StatsService } = require('./statsService');
+const { CacheService } = require('./cacheService');
+const { getFilterReason, filterList } = require('./filterService');
+const { logger } = require('./logger');
 
-const config = require('./xbk_config.json');
+const config = require(process.cwd() + '/../scripts/tyu/xbk_config.json');
 const isDryRun = process.argv.includes('--dry-run');
 const LOOP_LOG_INTERVAL = 24;
 const STATS_WINDOW_HOURS = 2;
@@ -33,7 +34,7 @@ function normalizeItem(item) {
   return normalized;
 }
 
-const cacheFileName = extractCacheFileName(fetchUrl);
+const cacheFileName = fetchService.extractCacheFileName(fetchUrl);
 const cacheService = new CacheService(cacheFileName, isDryRun);
 const notifier = new Notifier(isDryRun);
 const pushService = createPushService(notifier);
@@ -48,30 +49,25 @@ async function main() {
     logger.info('开始获取线报酷数据...');
   }
 
-  const list = await getData(fetchUrl);
+  const list = await fetchService.getData(fetchUrl);
   if (!list) return;
 
   const normalized = list.map(normalizeItem);
 
-  // ---------- 三重去重 ----------
-  const cachedIds = cacheService.getCachedIds();   // 持久化去重（跨批次）
-  const dedupSet = new Set();                      // 当前批次去重
+  const cachedIds = cacheService.getCachedIds();
+  const dedupSet = new Set();
   let dedupCount = 0;
   let titleHit = 0, contentHit = 0, categoryHit = 0, authorHit = 0, timeHit = 0;
   const toKeep = [];
 
-  // 可选的预筛选（仅用于缩减集，最终判定仍调用 getFilterReason）
   const filtered = filterList(normalized);
-
   for (const item of filtered) {
-    // 三重去重判断
     if (cachedIds.has(item.id) || dedupSet.has(item.id)) {
       dedupCount++;
       continue;
     }
     dedupSet.add(item.id);
 
-    // 最终判定权威：getFilterReason
     const reason = getFilterReason(item);
     if (reason.keep) {
       toKeep.push(item);
@@ -88,7 +84,6 @@ async function main() {
     logger.info(`本次执行统计：去重 ${dedupCount} | 标题命中 ${titleHit} | 内容命中 ${contentHit} | 分类命中 ${categoryHit} | 作者命中 ${authorHit} | 时间命中 ${timeHit}`);
   }
 
-  // 统计记录（必须在异步推送前）
   statsService.addRecord({
     dedup: dedupCount,
     titleHit,
@@ -102,7 +97,6 @@ async function main() {
   await pushService.sendBatch(toKeep);
   cacheService.addBatch(toKeep);
 
-  // 保留原有窗口统计打印
   if (loopCount % 20 === 0 || toKeep.length > 0) {
     const windowStats = statsService.getWindowStats();
     console.log(`\n近${STATS_WINDOW_HOURS}小时累计统计：去重 ${windowStats.dedup} 条 | 标题命中 ${windowStats.title} 条 | 内容命中 ${windowStats.content} 条 | 分类命中 ${windowStats.category} 条 | 作者命中 ${windowStats.author} 条 | 时间命中 ${windowStats.time} 条 | 已推送 ${windowStats.pushed} 条\n`);
