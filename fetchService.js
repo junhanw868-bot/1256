@@ -1,6 +1,6 @@
 'use strict';
 const { fetch } = require('undici');
-const { logger } = require('../utils/logger');
+const { logger } = require('./logger');
 
 const REQUEST_TIMEOUT_MS = 10000;
 const REQUEST_RETRY_LIMIT = 2;
