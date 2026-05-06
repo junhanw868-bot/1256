@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const { logger } = require('.logger');
+const { logger } = require('./logger');
 
 const EMPTY_JSON_ARRAY = '[]';
 const UTF8 = 'utf8';
